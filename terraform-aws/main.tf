@@ -1,12 +1,6 @@
 #--- root/main.tf ---
 
 
-locals {
-  vpc_cidr = "10.111.0.0/16"
-}
-
-
-
 module "networking" {
   source           = "./networking"
   vpc_cidr         = local.vpc_cidr
@@ -17,4 +11,18 @@ module "networking" {
   max_subnets      = 20
   access_ip        = var.access_ip
   security_groups  = local.security_groups
+  db_subnet_group  = "true"
+}
+
+module "database" {
+  source                 = "./database"
+  db_engine_version      = "5.7"
+  db_instance_class      = "db.t2.micro"
+  dbname                 = var.dbname
+  dbuser                 = var.dbuser
+  dbpassword             = var.dbpassword
+  db_identifier          = "mtc-db"
+  skip_db_snapshot       = true
+  db_subnet_group_name   = module.networking.db_subnet_group_name[0]
+  vpc_security_group_ids = module.networking.db_security_group
 }

@@ -1,5 +1,6 @@
 # --- networking/main.tf ---
 
+
 data "aws_availability_zones" "available" {}
 
 resource "random_integer" "random" {
@@ -22,13 +23,8 @@ resource "aws_vpc" "mtc_vpc" {
   }
   lifecycle {
     create_before_destroy = true
-
-
   }
-
-
 }
-
 
 resource "aws_subnet" "mtc_public_subnet" {
   count                   = var.public_sn_count
@@ -39,13 +35,8 @@ resource "aws_subnet" "mtc_public_subnet" {
 
   tags = {
     Name = "mtc_public_${count.index + 1}"
-
-
   }
-
-
 }
-
 
 resource "aws_subnet" "mtc_private_subnet" {
   count                   = var.private_sn_count
@@ -56,6 +47,15 @@ resource "aws_subnet" "mtc_private_subnet" {
 
   tags = {
     Name = "mtc_private_${count.index + 1}"
+  }
+}
+
+resource "aws_db_subnet_group" "mtc_rds_subnetgroup" {
+  count      = var.db_subnet_group == "true" ? 1 : 0
+  name       = "mtc_rds_subnetgroup"
+  subnet_ids = aws_subnet.mtc_private_subnet.*.id
+  tags = {
+    Name = "mtc_rds_sng"
   }
 }
 
