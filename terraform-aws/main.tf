@@ -51,7 +51,7 @@ module "compute" {
   instance_count  = 1
   instance_type   = "t3.micro"
   vol_size        = "20"
-  public_key_path = "var.dbpassword.pub"
+  public_key_path = "terraform.tfvars"
   key_name        = "mtckey"
 }
 
