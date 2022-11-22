@@ -1,6 +1,7 @@
 #--- root/main.tf ---
 
 
+
 module "networking" {
   source           = "./networking"
   vpc_cidr         = local.vpc_cidr
@@ -14,24 +15,24 @@ module "networking" {
   db_subnet_group  = "true"
 }
 
-# module "database" {
-#   source                 = "./database"
-#   db_engine_version      = "5.7"
-#   db_instance_class      = "db.t2.micro"
-#   dbname                 = var.dbname
-#   dbuser                 = var.dbuser
-#   dbpassword             = var.dbpassword
-#   db_identifier          = "mtc-db"
-#   skip_db_snapshot       = true
-#   db_subnet_group_name   = module.networking.db_subnet_group_name[0]
-#   vpc_security_group_ids = module.networking.db_security_group
-# }
+module "database" {
+  source                 = "./database"
+  db_engine_version      = "5.7"
+  db_instance_class      = "db.t2.micro"
+  dbname                 = var.dbname
+  dbuser                 = var.dbuser
+  dbpassword             = var.dbpassword
+  db_identifier          = "mtc-db"
+  skip_db_snapshot       = true
+  db_subnet_group_name   = module.networking.db_subnet_group_name[0]
+  vpc_security_group_ids = [module.networking.db_security_group]
+}
 
 module "loadbalancing" {
   source                  = "./loadbalancing"
   public_sg               = module.networking.public_sg
   public_subnets          = module.networking.public_subnets
-  tg_port                 = 80
+  tg_port                 = 8000
   tg_protocol             = "HTTP"
   vpc_id                  = module.networking.vpc_id
   elb_healthy_threshold   = 2
@@ -42,16 +43,19 @@ module "loadbalancing" {
   listener_protocol       = "HTTP"
 }
 
-
-
 module "compute" {
-  source          = "./compute"
-  public_sg       = module.networking.public_sg
-  public_subnets  = module.networking.public_subnets
-  instance_count  = 1
-  instance_type   = "t3.micro"
-  vol_size        = "20"
-  public_key_path = "terraform.tfvars"
-  key_name        = "mtckey"
+  source              = "./compute"
+  public_sg           = module.networking.public_sg
+  public_subnets      = module.networking.public_subnets
+  instance_count      = 2
+  instance_type       = "t3.micro"
+  vol_size            = "20"
+  public_key_path     =  "/home/ec2-user/.ssh/id_rsa.pub"
+  key_name            = "mtckey"
+  dbname              = var.dbname
+  dbuser              = var.dbuser
+  dbpassword          = var.dbpassword
+  db_endpoint         = module.database.db_endpoint
+  user_data_path      = "${path.root}/userdata.tpl"
+  lb_target_group_arn = module.loadbalancing.lb_target_group_arn
 }
-
